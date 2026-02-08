@@ -35,7 +35,7 @@ const github = {
     }
   },
 
-  async saveFile(path, content, sha = null) {
+  async saveFile(path, content) {
     const { repo, token, branch } = this.getConfig();
     if (!repo || !token) {
       showToast('GitHub設定が必要です', true);
@@ -43,6 +43,13 @@ const github = {
     }
 
     try {
+      // Always get current sha first (required for updating existing files)
+      let sha = null;
+      const existing = await this.getFile(path);
+      if (existing) {
+        sha = existing.sha;
+      }
+
       const body = {
         message: `Update ${path}`,
         content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
@@ -96,21 +103,16 @@ const github = {
 };
 
 // ===== Data Management =====
-let reflectionsSha = null;
-let diarySha = null;
-
 async function loadData() {
   // Load from GitHub
   const reflectionsData = await github.getFile('data/reflections.json');
   if (reflectionsData) {
     reflections = reflectionsData.content;
-    reflectionsSha = reflectionsData.sha;
   }
 
   const diaryData = await github.getFile('data/diary.json');
   if (diaryData) {
     diary = diaryData.content;
-    diarySha = diaryData.sha;
   }
 
   // Also save to localStorage as backup
@@ -120,22 +122,13 @@ async function loadData() {
 
 async function saveReflections() {
   localStorage.setItem('reflections', JSON.stringify(reflections));
-  const success = await github.saveFile('data/reflections.json', reflections, reflectionsSha);
-  if (success) {
-    // Update sha for next save
-    const data = await github.getFile('data/reflections.json');
-    if (data) reflectionsSha = data.sha;
-  }
+  const success = await github.saveFile('data/reflections.json', reflections);
   return success;
 }
 
 async function saveDiaryData() {
   localStorage.setItem('diary', JSON.stringify(diary));
-  const success = await github.saveFile('data/diary.json', diary, diarySha);
-  if (success) {
-    const data = await github.getFile('data/diary.json');
-    if (data) diarySha = data.sha;
-  }
+  const success = await github.saveFile('data/diary.json', diary);
   return success;
 }
 
