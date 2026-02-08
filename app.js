@@ -78,8 +78,10 @@ const github = {
       );
       if (!res.ok) return null;
       const data = await res.json();
+      // Proper UTF-8 decoding for Japanese text
+      const decoded = decodeURIComponent(escape(atob(data.content)));
       return {
-        content: JSON.parse(atob(data.content)),
+        content: JSON.parse(decoded),
         sha: data.sha
       };
     } catch (e) {
