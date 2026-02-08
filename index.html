@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reflection & 5年日記</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📔 Reflection & 5年日記</h1>
+      <nav>
+        <button class="tab-btn active" data-tab="reflection">リフレクション</button>
+        <button class="tab-btn" data-tab="diary">5年日記</button>
+        <button class="tab-btn" data-tab="settings">設定</button>
+      </nav>
+    </header>
+
+    <!-- リフレクション -->
+    <section id="reflection" class="tab-content active">
+      <div class="question-card">
+        <div class="category-badge" id="questionCategory"></div>
+        <p class="question-text" id="questionText">質問を読み込み中...</p>
+        <button class="btn-secondary" id="nextQuestion">🔀 次の質問</button>
+      </div>
+
+      <div class="answer-section">
+        <textarea id="reflectionAnswer" placeholder="あなたの答えを書いてください..."></textarea>
+        <button class="btn-primary" id="saveReflection">💾 保存</button>
+      </div>
+
+      <div class="past-answers" id="pastAnswers">
+        <h3>📜 この質問への過去の回答</h3>
+        <div id="pastAnswersList"></div>
+      </div>
+    </section>
+
+    <!-- 5年日記 -->
+    <section id="diary" class="tab-content">
+      <div class="date-selector">
+        <button id="prevDay">◀</button>
+        <span id="currentDate"></span>
+        <button id="nextDay">▶</button>
+        <button id="todayBtn">今日</button>
+      </div>
+
+      <div class="diary-entry current-year">
+        <h3 id="currentYearLabel"></h3>
+        <textarea id="diaryText" placeholder="今日の出来事を書いてください..."></textarea>
+        <button class="btn-primary" id="saveDiary">💾 保存</button>
+      </div>
+
+      <div class="past-entries" id="pastEntries">
+        <h3>📅 同じ日の過去の記録</h3>
+        <div id="pastEntriesList"></div>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section id="settings" class="tab-content">
+      <div class="settings-card">
+        <h3>🔧 GitHub設定</h3>
+        <div class="form-group">
+          <label>リポジトリ (owner/repo)</label>
+          <input type="text" id="repoName" placeholder="username/reflection-diary">
+        </div>
+        <div class="form-group">
+          <label>Personal Access Token</label>
+          <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
+          <small>repo権限が必要です</small>
+        </div>
+        <div class="form-group">
+          <label>ブランチ</label>
+          <input type="text" id="branchName" placeholder="main" value="main">
+        </div>
+        <button class="btn-primary" id="saveSettings">保存</button>
+        <button class="btn-secondary" id="testConnection">接続テスト</button>
+        <p id="connectionStatus"></p>
+      </div>
+
+      <div class="settings-card">
+        <h3>📊 データ</h3>
+        <button class="btn-secondary" id="exportData">エクスポート (JSON)</button>
+        <button class="btn-secondary" id="syncFromGithub">GitHubから同期</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
