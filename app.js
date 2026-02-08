@@ -4,6 +4,59 @@ let currentDate = new Date();
 let reflections = { answers: [] }; // { answers: [{ questionId, date, text }] }
 let diary = { entries: [] }; // { entries: [{ date, text }] }
 
+// ===== URL Config =====
+function loadConfigFromUrl() {
+  const hash = window.location.hash;
+  if (!hash || !hash.startsWith('#config=')) return false;
+  
+  try {
+    const encoded = hash.substring(8); // Remove '#config='
+    const json = atob(encoded);
+    const config = JSON.parse(json);
+    
+    if (config.repo) localStorage.setItem('github_repo', config.repo);
+    if (config.token) localStorage.setItem('github_token', config.token);
+    if (config.branch) localStorage.setItem('github_branch', config.branch);
+    
+    // Clear hash from URL (keeps it clean, config is now in localStorage)
+    history.replaceState(null, '', window.location.pathname);
+    return true;
+  } catch (e) {
+    console.error('Failed to parse config from URL:', e);
+    return false;
+  }
+}
+
+function generateShareUrl() {
+  const config = {
+    repo: localStorage.getItem('github_repo') || '',
+    token: localStorage.getItem('github_token') || '',
+    branch: localStorage.getItem('github_branch') || 'main'
+  };
+  
+  if (!config.repo || !config.token) {
+    showToast('先にGitHub設定を保存してください', true);
+    return null;
+  }
+  
+  const encoded = btoa(JSON.stringify(config));
+  const url = `${window.location.origin}${window.location.pathname}#config=${encoded}`;
+  return url;
+}
+
+function handleGenerateShareUrl() {
+  const url = generateShareUrl();
+  if (!url) return;
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('共有URLをコピーしました！このURLをブックマークしてください');
+  }).catch(() => {
+    // Fallback: show in prompt
+    prompt('このURLをブックマークしてください:', url);
+  });
+}
+
 // ===== GitHub API =====
 const github = {
   getConfig() {
@@ -354,6 +407,10 @@ function setupTabs() {
 // ===== Init =====
 async function init() {
   setupTabs();
+  
+  // Load config from URL first (if present)
+  const loadedFromUrl = loadConfigFromUrl();
+  
   loadSettings();
 
   // Load from localStorage first (faster)
@@ -365,6 +422,9 @@ async function init() {
   // Then sync from GitHub
   if (github.getConfig().token) {
     loadData();
+    if (loadedFromUrl) {
+      showToast('設定を読み込みました！');
+    }
   }
 
   // Reflection
@@ -384,6 +444,7 @@ async function init() {
   document.getElementById('testConnection').addEventListener('click', handleTestConnection);
   document.getElementById('syncFromGithub').addEventListener('click', handleSyncFromGithub);
   document.getElementById('exportData').addEventListener('click', handleExportData);
+  document.getElementById('generateShareUrl').addEventListener('click', handleGenerateShareUrl);
 }
 
 document.addEventListener('DOMContentLoaded', init);
