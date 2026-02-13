@@ -275,22 +275,23 @@ function updateDiaryView() {
   const entry = diary.entries.find(e => e.date === dateKey);
   document.getElementById('diaryText').value = entry ? entry.text : '';
 
-  // Show past years
+  // Show past years (including current year)
   showPastEntries();
 }
 
 function showPastEntries() {
   const list = document.getElementById('pastEntriesList');
   const currentYear = currentDate.getFullYear();
+  const currentDateKey = formatFullDate(currentDate);
   const monthDay = getMonthDay(currentDate);
 
-  // Find entries from other years with same month-day
+  // Find entries from same month-day (including current year, but excluding today's entry being edited)
   const pastEntries = diary.entries
     .filter(e => {
       const entryDate = new Date(e.date);
       const entryMonthDay = getMonthDay(entryDate);
-      const entryYear = entryDate.getFullYear();
-      return entryMonthDay === monthDay && entryYear !== currentYear;
+      // Include same month-day entries, but exclude the exact current date (that's being edited above)
+      return entryMonthDay === monthDay && e.date !== currentDateKey;
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -314,21 +315,50 @@ async function handleSaveDiary() {
   const text = document.getElementById('diaryText').value.trim();
   const dateKey = formatFullDate(currentDate);
 
-  // Update or add entry
-  const idx = diary.entries.findIndex(e => e.date === dateKey);
-  if (idx >= 0) {
+  // Reload latest data from GitHub before saving to prevent data loss
+  const latestDiaryData = await github.getFile('data/diary.json');
+  if (latestDiaryData) {
+    // Merge: keep all entries from server, then update/add current entry
+    const serverEntries = latestDiaryData.content.entries || [];
+    
+    // Find if current date entry exists in server data
+    const serverIdx = serverEntries.findIndex(e => e.date === dateKey);
+    
     if (text) {
-      diary.entries[idx].text = text;
+      if (serverIdx >= 0) {
+        // Update existing entry
+        serverEntries[serverIdx].text = text;
+      } else {
+        // Add new entry
+        serverEntries.push({ date: dateKey, text });
+      }
     } else {
-      diary.entries.splice(idx, 1); // Remove if empty
+      // Remove entry if text is empty
+      if (serverIdx >= 0) {
+        serverEntries.splice(serverIdx, 1);
+      }
     }
-  } else if (text) {
-    diary.entries.push({ date: dateKey, text });
+    
+    diary.entries = serverEntries;
+  } else {
+    // No server data, just update local
+    const idx = diary.entries.findIndex(e => e.date === dateKey);
+    if (idx >= 0) {
+      if (text) {
+        diary.entries[idx].text = text;
+      } else {
+        diary.entries.splice(idx, 1);
+      }
+    } else if (text) {
+      diary.entries.push({ date: dateKey, text });
+    }
   }
 
   const success = await saveDiaryData();
   if (success) {
     showToast('保存しました！');
+    // Update view to show the saved entry in past entries list
+    updateDiaryView();
   }
 }
 
